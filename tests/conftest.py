@@ -13,24 +13,21 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import StaticPool
 
-import app.core.redis as redis_core
-from app.api.deps import get_db, get_redis_dep
-from app.core.security import hash_api_key
-from app.main import app
-from app.models.auth import APIKeyRecord, ClientRecord
-from app.models.base import Base
-from app.workers.celery_app import celery_app
-
-# Configure Celery in-memory broker for instant, non-blocking test execution
-celery_app.conf.update(
-    broker_url="memory://",
-    result_backend="cache+memory://",
-    task_ignore_result=True,
-)
-
 TEST_API_KEY = "pk_test_live_secret_key_pulseengine_123456"
 TEST_CLIENT_ID = "client_test_id"
 TEST_CLIENT_SECRET = "client_test_secret"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def configure_celery():
+    """Configure Celery in-memory broker for instant, non-blocking test execution."""
+    from app.workers.celery_app import celery_app
+
+    celery_app.conf.update(
+        broker_url="memory://",
+        result_backend="cache+memory://",
+        task_ignore_result=True,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -43,8 +40,9 @@ def event_loop():
 @pytest.fixture
 async def test_redis() -> AsyncGenerator[fakeredis.aioredis.FakeRedis, None]:
     """Provide an isolated in-memory FakeRedis client with Lua support."""
+    import app.core.redis as redis_core
+
     redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
-    # Monkey-patch get_redis in app.core.redis to return our test redis
     redis_core._redis_client = redis
     yield redis
     await redis.flushall()
@@ -54,6 +52,8 @@ async def test_redis() -> AsyncGenerator[fakeredis.aioredis.FakeRedis, None]:
 @pytest.fixture
 async def test_engine():
     """Create in-memory SQLite async engine for high-speed, isolated test execution."""
+    from app.models.base import Base
+
     engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -80,6 +80,9 @@ async def test_session_factory(test_engine):
 
 @pytest.fixture
 async def test_db(test_session_factory) -> AsyncGenerator[AsyncSession, None]:
+    from app.core.security import hash_api_key
+    from app.models.auth import APIKeyRecord, ClientRecord
+
     async with test_session_factory() as session:
         # Seed test API Key
         key_hash = hash_api_key(TEST_API_KEY)
@@ -111,6 +114,9 @@ async def client(
     test_db,
 ) -> AsyncGenerator[httpx.AsyncClient, None]:
     """Async HTTP client pre-configured with FastAPI dependency overrides."""
+    from app.api.deps import get_db, get_redis_dep
+    from app.main import app
+
     async def _override_get_db() -> AsyncGenerator[AsyncSession, None]:
         async with test_session_factory() as session:
             yield session
