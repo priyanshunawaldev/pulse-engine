@@ -1,9 +1,12 @@
 import asyncio
 import hashlib
 import hmac
+import ipaddress
 import json
+import socket
 import uuid
 from datetime import UTC, datetime, timedelta
+from urllib.parse import urlsplit
 
 import httpx
 from sqlalchemy import select
@@ -14,6 +17,11 @@ from app.core.config import settings
 from app.core.database import async_session_factory
 from app.core.logging import logger
 from app.models.webhook import WebhookDelivery, WebhookSubscription
+from app.schemas.webhook import (
+    TEST_DOMAINS,
+    is_ip_private_or_restricted,
+    validate_target_url,
+)
 from app.services.reconciliation_service import run_reconciliation
 from app.workers.celery_app import celery_app
 
@@ -21,6 +29,46 @@ from app.workers.celery_app import celery_app
 def generate_hmac_signature(secret: str, payload_bytes: bytes) -> str:
     """Generate SHA256 HMAC signature for webhook payload."""
     return hmac.new(secret.encode("utf-8"), payload_bytes, hashlib.sha256).hexdigest()
+
+
+async def check_runtime_ssrf(target_url: str) -> None:
+    """
+    Defense-in-depth Runtime SSRF Guard:
+    1. Validates syntactic correctness, scheme, and non-private IP/domain rules.
+    2. Resolves DNS asynchronously for external hostnames to detect DNS rebinding
+       or dynamic domain attacks pointing to loopback, link-local, or private subnets.
+    """
+    validate_target_url(target_url)
+
+    parsed = urlsplit(target_url.strip())
+    hostname = (parsed.hostname or "").lower()
+
+    if hostname == "testserver" or any(hostname.endswith(tld) for tld in TEST_DOMAINS):
+        return
+
+    # If hostname is already a valid IP address, validate_target_url already checked it
+    try:
+        ip = ipaddress.ip_address(hostname)
+        if is_ip_private_or_restricted(ip):
+            raise ValueError(f"Webhook target URL IP '{hostname}' is forbidden (private/cloud metadata address).")
+        return
+    except ValueError:
+        pass
+
+    # Resolve domain asynchronously to prevent DNS rebinding attacks
+    loop = asyncio.get_running_loop()
+    try:
+        addr_info = await loop.getaddrinfo(hostname, None)
+        for _, _, _, _, sockaddr in addr_info:
+            ip_str = sockaddr[0]
+            resolved_ip = ipaddress.ip_address(ip_str)
+            if is_ip_private_or_restricted(resolved_ip):
+                raise ValueError(
+                    f"Resolved IP '{ip_str}' for host '{hostname}' is forbidden (SSRF restricted subnet)."
+                )
+    except socket.gaierror:
+        # Non-resolvable host; httpx will fail connection naturally
+        pass
 
 
 async def _do_dispatch_webhook(session: AsyncSession, delivery_id_str: str) -> bool:
@@ -43,6 +91,22 @@ async def _do_dispatch_webhook(session: AsyncSession, delivery_id_str: str) -> b
     delivery.attempt_count += 1
     delivery.last_attempt_at = datetime.now(UTC)
 
+    # Runtime SSRF Guard Check (Vibe Block 26) with DNS Rebinding Protection
+    try:
+        await check_runtime_ssrf(subscription.target_url)
+    except ValueError as exc:
+        delivery.status = "DLQ"
+        delivery.error_detail = f"SSRF security violation: {exc}"
+        delivery.next_retry_at = None
+        await session.commit()
+        logger.error(
+            "webhook_ssrf_blocked",
+            delivery_id=delivery_id_str,
+            target_url=subscription.target_url,
+            error=str(exc),
+        )
+        return False
+
     payload_bytes = json.dumps(delivery.payload, sort_keys=True, default=str).encode("utf-8")
     signature = generate_hmac_signature(subscription.secret, payload_bytes)
 
@@ -54,7 +118,7 @@ async def _do_dispatch_webhook(session: AsyncSession, delivery_id_str: str) -> b
     }
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
             response = await client.post(
                 subscription.target_url,
                 content=payload_bytes,

@@ -42,6 +42,7 @@ async def test_webhook_subscription_lifecycle(client: httpx.AsyncClient, auth_he
     list_resp = await client.get(f"/v1/webhooks?account_id={acc['id']}", headers=auth_headers)
     assert list_resp.status_code == 200
     assert len(list_resp.json()["items"]) == 1
+    assert list_resp.json()["items"][0]["secret"] == "whsec_***"
 
     # 4. Deactivate subscription
     del_resp = await client.delete(f"/v1/webhooks/{sub_id}", headers=auth_headers)

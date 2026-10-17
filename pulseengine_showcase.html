@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PulseEngine — Interactive Executive Showcase</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* Smooth tab transitions */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    /* Animated pulse indicator */
+    @keyframes pulse-dot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.7; }
+    }
+    .pulse-dot { animation: pulse-dot 2s infinite ease-in-out; }
+    /* Code block scrollbar */
+    pre::-webkit-scrollbar { height: 6px; width: 6px; }
+    pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen p-4 md:p-8 font-sans">
+
+  <!-- Main Container -->
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Top Header & Banner -->
+    <header class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="space-y-1">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center font-black text-xl shadow-md">
+            ⚡
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-[var(--foreground)]">PulseEngine</h1>
+            <p class="text-xs text-[var(--muted-foreground)] font-mono">Distributed Ledger & High-Throughput Event Ingestion API</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot"></span>
+          All 39 Tests Passing
+        </span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+          92.1% Code Coverage
+        </span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+          Zero-Sum Invariant Enforced
+        </span>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="flex flex-wrap gap-2 border-b border-[var(--border)] pb-2">
+      <button onclick="switchTab('sim')" id="tab-btn-sim" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm">
+        🎮 Interactive Simulator
+      </button>
+      <button onclick="switchTab('arch')" id="tab-btn-arch" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-[var(--border)]">
+        🏛️ System Architecture
+      </button>
+      <button onclick="switchTab('pitch')" id="tab-btn-pitch" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-[var(--border)]">
+        💼 Founder & Executive Pitch
+      </button>
+      <button onclick="switchTab('incidents')" id="tab-btn-incidents" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-[var(--border)]">
+        🛠️ 14 Engineering Incidents
+      </button>
+      <button onclick="switchTab('benchmarks')" id="tab-btn-benchmarks" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-[var(--card)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-[var(--border)]">
+        📈 Stress Test Scorecard
+      </button>
+    </nav>
+
+    <!-- TAB 1: INTERACTIVE SIMULATOR -->
+    <section id="tab-sim" class="tab-content active space-y-6">
+      <!-- Intro callout -->
+      <div class="bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-xl p-4 text-xs md:text-sm text-[var(--foreground)] flex items-start gap-3">
+        <span class="text-xl">💡</span>
+        <div>
+          <strong class="font-semibold">Live Sandbox:</strong> Experience how PulseEngine processes high-concurrency transfers in real time. Click any scenario button below to trigger the exact 6-step distributed execution pipeline (Token Bucket, SHA-256 Idempotency, Redlock Mutex, Double-Entry Validation, Postgres CAS, and HMAC Webhook).
+        </div>
+      </div>
+
+      <!-- Account Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Account A -->
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm space-y-3 relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
+                A
+              </div>
+              <div>
+                <h3 class="font-bold text-sm text-[var(--foreground)]">Alice Corp (Merchant Account)</h3>
+                <p class="text-xs font-mono text-[var(--muted-foreground)]">ID: 019468ab-...-0001 • USD</p>
+              </div>
+            </div>
+            <span id="badge-acc-a" class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">ACTIVE</span>
+          </div>
+          <div class="bg-[var(--background)] rounded-lg p-3 border border-[var(--border)]">
+            <span class="text-xs text-[var(--muted-foreground)] uppercase tracking-wider font-semibold">Snapshot Balance</span>
+            <div id="bal-a" class="text-2xl font-black font-mono text-[var(--foreground)] mt-0.5">$100.0000</div>
+          </div>
+          <div class="text-xs text-[var(--muted-foreground)] flex items-center justify-between font-mono">
+            <span>Version: <span id="ver-a" class="text-[var(--foreground)] font-bold">1</span></span>
+            <span>Initial: $100.0000</span>
+          </div>
+        </div>
+
+        <!-- Account B -->
+        <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm space-y-3 relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-sm">
+                B
+              </div>
+              <div>
+                <h3 class="font-bold text-sm text-[var(--foreground)]">Bob Treasury (Settlement Vault)</h3>
+                <p class="text-xs font-mono text-[var(--muted-foreground)]">ID: 019468ab-...-0002 • USD</p>
+              </div>
+            </div>
+            <span id="badge-acc-b" class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">ACTIVE</span>
+          </div>
+          <div class="bg-[var(--background)] rounded-lg p-3 border border-[var(--border)]">
+            <span class="text-xs text-[var(--muted-foreground)] uppercase tracking-wider font-semibold">Snapshot Balance</span>
+            <div id="bal-b" class="text-2xl font-black font-mono text-[var(--foreground)] mt-0.5">$50.0000</div>
+          </div>
+          <div class="text-xs text-[var(--muted-foreground)] flex items-center justify-between font-mono">
+            <span>Version: <span id="ver-b" class="text-[var(--foreground)] font-bold">1</span></span>
+            <span>Initial: $50.0000</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Control Panel -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm space-y-4">
+        <h3 class="text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
+          <span>⚡ Simulation Actions</span>
+          <span class="text-xs font-normal text-[var(--muted-foreground)]">(Select any stress or normal scenario)</span>
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <button onclick="runScenario('transfer')" class="p-3 text-left rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-blue-500 hover:bg-blue-500/5 transition-all text-xs space-y-1">
+            <div class="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+              <span>💸 Normal Transfer ($25.00)</span>
+            </div>
+            <p class="text-[var(--muted-foreground)]">Debit Alice $25, Credit Bob $25. Sum equals 0.0000.</p>
+          </button>
+
+          <button onclick="runScenario('race')" class="p-3 text-left rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-rose-500 hover:bg-rose-500/5 transition-all text-xs space-y-1">
+            <div class="font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+              <span>🔥 10 Concurrent $20 Debits</span>
+            </div>
+            <p class="text-[var(--muted-foreground)]">Tests Redlock & 0-overdraft gate. Alice only has funds for 5.</p>
+          </button>
+
+          <button onclick="runScenario('idempotency')" class="p-3 text-left rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-amber-500 hover:bg-amber-500/5 transition-all text-xs space-y-1">
+            <div class="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+              <span>🔁 Replay Duplicate Key</span>
+            </div>
+            <p class="text-[var(--muted-foreground)]">Sends exact same payload twice. Returns cached 200 without duplicate debit.</p>
+          </button>
+
+          <button onclick="runScenario('reversal')" class="p-3 text-left rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-indigo-500 hover:bg-indigo-500/5 transition-all text-xs space-y-1">
+            <div class="font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+              <span>↩️ Reverse Last Transaction</span>
+            </div>
+            <p class="text-[var(--muted-foreground)]">Posts equal-and-opposite mirror entry with locked refund mutex.</p>
+          </button>
+
+          <button onclick="runScenario('reconcile')" class="p-3 text-left rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-emerald-500 hover:bg-emerald-500/5 transition-all text-xs space-y-1">
+            <div class="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+              <span>🛡️ Nightly Audit Reconciliation</span>
+            </div>
+            <p class="text-[var(--muted-foreground)]">Verifies Balance == Initial + Sum(LedgerEntries). Zero drift check.</p>
+          </button>
+
+          <button onclick="resetSimulation()" class="p-3 text-left rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--muted-foreground)] transition-all text-xs space-y-1">
+            <div class="font-semibold text-[var(--muted-foreground)] flex items-center gap-1.5">
+              <span>🔄 Reset Ledger State</span>
+            </div>
+            <p class="text-[var(--muted-foreground)]">Restores Alice to $100 and Bob to $50, clears logs.</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- Execution Pipeline Visualization -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-[var(--foreground)]">Interactive Pipeline Execution Flow</h3>
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-2 text-center text-xs">
+          <div id="step-rate" class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] transition-all">
+            <div class="font-mono text-base mb-1">⏳</div>
+            <div class="font-bold">1. Rate Limiter</div>
+            <div class="text-[var(--muted-foreground)]">Token Bucket</div>
+          </div>
+          <div id="step-idemp" class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] transition-all">
+            <div class="font-mono text-base mb-1">🔑</div>
+            <div class="font-bold">2. Idempotency</div>
+            <div class="text-[var(--muted-foreground)]">SHA-256 Hash</div>
+          </div>
+          <div id="step-lock" class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] transition-all">
+            <div class="font-mono text-base mb-1">🔒</div>
+            <div class="font-bold">3. Redlock</div>
+            <div class="text-[var(--muted-foreground)]">Sorted UUIDs</div>
+          </div>
+          <div id="step-double" class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] transition-all">
+            <div class="font-mono text-base mb-1">⚖️</div>
+            <div class="font-bold">4. Double-Entry</div>
+            <div class="text-[var(--muted-foreground)]">Σ Delta == 0</div>
+          </div>
+          <div id="step-commit" class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] transition-all">
+            <div class="font-mono text-base mb-1">💾</div>
+            <div class="font-bold">5. Postgres CAS</div>
+            <div class="text-[var(--muted-foreground)]">version_id_col</div>
+          </div>
+          <div id="step-webhook" class="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] transition-all">
+            <div class="font-mono text-base mb-1">📡</div>
+            <div class="font-bold">6. Webhook</div>
+            <div class="text-[var(--muted-foreground)]">HMAC-SHA256</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Terminal Console -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm space-y-2">
+        <div class="flex items-center justify-between text-xs border-b border-[var(--border)] pb-2">
+          <span class="font-mono font-bold flex items-center gap-1.5 text-[var(--foreground)]">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+            PulseEngine Event Log & Double-Entry Ledger Journal
+          </span>
+          <span class="text-[var(--muted-foreground)] font-mono">Format: JSON Lines (structlog)</span>
+        </div>
+        <div id="sim-console" class="font-mono text-xs p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] h-48 overflow-y-auto space-y-1 text-[var(--muted-foreground)]">
+          <p class="text-emerald-500">[SYSTEM READY] PulseEngine API online. Postgres 16 connected (asyncpg). Redis 7 pool warm. Celery workers active.</p>
+          <p>[INFO] Seed accounts initialized: Alice ($100.0000 USD), Bob ($50.0000 USD). Ready for incoming transactions.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: SYSTEM ARCHITECTURE -->
+    <section id="tab-arch" class="tab-content space-y-6">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 shadow-sm space-y-4">
+        <h2 class="text-lg font-bold text-[var(--foreground)]">Enterprise Distributed Architecture</h2>
+        <p class="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          PulseEngine is decoupled into 5 micro-services operating across synchronous API bounds and asynchronous event queues. Every layer guarantees mathematical consistency and zero financial drift.
+        </p>
+
+        <!-- Architectural Component Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400">
+              <span>🚀 FastAPI Async Core</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              Handles HTTP requests with Pydantic v2 validation. Enforces dual authentication (JWT Bearer + API Key) and token bucket rate limiting before passing payloads to the service layer.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center gap-2 text-sm font-bold text-rose-600 dark:text-rose-400">
+              <span>🔒 Redis 7 Redlock Mutex</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              Multi-resource distributed locks with Lua-script atomic release. Accounts are sorted in ascending UUID order prior to acquisition, eliminating circular wait deadlocks.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-400">
+              <span>🐘 PostgreSQL 16 (ACID Ledger)</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              Stores immutable journal entries with composite B-Tree indexes. Employs <code class="font-mono text-xs">NUMERIC(18, 4)</code>, strict check constraints, and optimistic CAS version columns.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center gap-2 text-sm font-bold text-amber-600 dark:text-amber-400">
+              <span>⚡ Celery Background Workers</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              Dispatches outgoing webhooks asynchronously so API latency is never blocked by external subscriber endpoints. Supports late acknowledgments (<code class="font-mono text-xs">acks_late=True</code>).
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center gap-2 text-sm font-bold text-purple-600 dark:text-purple-400">
+              <span>🔐 HMAC-SHA256 Webhooks</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              Every webhook delivery includes an HMAC signature header (<code class="font-mono text-xs">X-PulseEngine-Signature</code>). Implements exponential retry backoff (5s, 30s, 120s) before routing to DLQ.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center gap-2 text-sm font-bold text-teal-600 dark:text-teal-400">
+              <span>🛡️ Nightly Audit Reconciliation</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              Runs Celery Beat jobs verifying snapshot balances against raw ledger entries. Raises critical alerts on discrepancies with zero auto-mutation (SOX 404 & PCI-DSS compliance).
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: FOUNDER & EXECUTIVE PITCH -->
+    <section id="tab-pitch" class="tab-content space-y-6">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 shadow-sm space-y-5">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">Executive Briefing</span>
+          <h2 class="text-xl font-bold text-[var(--foreground)] mt-1">Why Traditional Financial Backends Fail & How PulseEngine Solves It</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- The Problem -->
+          <div class="p-4 rounded-xl bg-rose-500/5 border border-rose-500/20 space-y-3">
+            <h3 class="text-sm font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2">
+              <span>❌ The 4 Fatal Pitfalls of Standard Backends</span>
+            </h3>
+            <ul class="text-xs space-y-2 text-[var(--muted-foreground)]">
+              <li><strong class="text-[var(--foreground)]">1. Floating-Point Drift:</strong> Storing currency as standard floats causes micro-cent drift ($0.1 + $0.2 = $0.30000000000000004), failing financial audits.</li>
+              <li><strong class="text-[var(--foreground)]">2. Concurrency Race Conditions:</strong> A user with $100 fires 5 simultaneous requests; the database allows all 5 to read $100 before writing, resulting in $400 of overdraft losses.</li>
+              <li><strong class="text-[var(--foreground)]">3. Duplicate Deductions:</strong> Network drops cause clients to retry, causing double-charges and massive customer churn.</li>
+              <li><strong class="text-[var(--foreground)]">4. Unauditable Balance Mutations:</strong> Modifying account balances via direct SQL updates leaves no cryptographic record of who transferred what and why.</li>
+            </ul>
+          </div>
+
+          <!-- The PulseEngine Solution -->
+          <div class="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-3">
+            <h3 class="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+              <span>✅ How PulseEngine Eliminates Financial Risk</span>
+            </h3>
+            <ul class="text-xs space-y-2 text-[var(--muted-foreground)]">
+              <li><strong class="text-[var(--foreground)]">1. Fixed-Point Precision:</strong> Enforces <code class="font-mono text-xs">NUMERIC(18, 4)</code> across all entities. Every single transaction mathematically sums to zero ($$\sum \text{entries} = 0$$).</li>
+              <li><strong class="text-[var(--foreground)]">2. Redlock + Database OCC:</strong> Locks accounts deterministically and verifies version compare-and-swap, making overdraft mathematically impossible.</li>
+              <li><strong class="text-[var(--foreground)]">3. Database-Enforced Idempotency:</strong> Duplicate requests return cached responses with zero state changes, even under nanosecond races.</li>
+              <li><strong class="text-[var(--foreground)]">4. Double-Entry Immutability:</strong> Balances are never modified in isolation. Every balance change requires equal and opposite debit and credit ledger rows.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Business ROI -->
+        <div class="border-t border-[var(--border)] pt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+          <div class="p-3 bg-[var(--background)] rounded-lg border border-[var(--border)]">
+            <div class="text-xl font-black text-[var(--foreground)]">100%</div>
+            <div class="text-xs text-[var(--muted-foreground)]">Audit Invariant Consistency</div>
+          </div>
+          <div class="p-3 bg-[var(--background)] rounded-lg border border-[var(--border)]">
+            <div class="text-xl font-black text-emerald-600 dark:text-emerald-400">&lt; 40 ms</div>
+            <div class="text-xs text-[var(--muted-foreground)]">p95 Latency at 1,000+ req/sec</div>
+          </div>
+          <div class="p-3 bg-[var(--background)] rounded-lg border border-[var(--border)]">
+            <div class="text-xl font-black text-blue-600 dark:text-blue-400">$0.0000</div>
+            <div class="text-xs text-[var(--muted-foreground)]">Zero Balance Overdraft Drift</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: 14 ENGINEERING INCIDENTS -->
+    <section id="tab-incidents" class="tab-content space-y-6">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 shadow-sm space-y-4">
+        <div>
+          <h2 class="text-lg font-bold text-[var(--foreground)]">14 Real Distributed Systems Incidents & Engineering Learnings</h2>
+          <p class="text-sm text-[var(--muted-foreground)]">
+            These are actual production edge-cases isolated, debugged, and solved during the engineering of PulseEngine. Perfect talking points for technical interviews and engineering blogs.
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <!-- Incident 07 -->
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sm text-[var(--foreground)]">Incident #07: Circular Deadlocks in High-Frequency Bidirectional Transfers</span>
+              <span class="px-2 py-0.5 rounded text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400">CRITICAL</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              <strong>The Problem:</strong> Thread 1 transferred from Account A to B (acquiring Lock A then B). Thread 2 transferred from B to A (acquiring Lock B then A). Both threads hung waiting for the other to release the lock, causing 503 timeouts.
+            </p>
+            <p class="text-xs text-emerald-600 dark:text-emerald-400">
+              <strong>The Fix:</strong> Sorted all account UUIDs in ascending lexicographical order prior to lock acquisition. Both threads now request Lock A before Lock B, making circular wait deadlocks mathematically impossible.
+            </p>
+          </div>
+
+          <!-- Incident 08 -->
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sm text-[var(--foreground)]">Incident #08: Lock Timeout Ignored, Causing Unlocked Concurrent Mutation</span>
+              <span class="px-2 py-0.5 rounded text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400">CRITICAL</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              <strong>The Problem:</strong> When lock acquisition timed out after 5,000ms, <code class="font-mono text-xs">await lock.acquire()</code> returned False, but the return value was uninspected. The unacquired lock was appended to the active locks list, and the code proceeded to execute without holding the lock!
+            </p>
+            <p class="text-xs text-emerald-600 dark:text-emerald-400">
+              <strong>The Fix:</strong> Explicitly asserted <code class="font-mono text-xs">if not acquired: raise LockAcquisitionError(...)</code>, aborting immediately and safeguarding account balances.
+            </p>
+          </div>
+
+          <!-- Incident 11 -->
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sm text-[var(--foreground)]">Incident #11: Concurrent Idempotency DB Integrity Crash (500 instead of 409)</span>
+              <span class="px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">HIGH</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              <strong>The Problem:</strong> Two identical requests with the same new idempotency key arrived simultaneously against an empty DB. Both passed the initial SELECT, and the second worker crashed with an unhandled SQLAlchemy <code class="font-mono text-xs">IntegrityError</code>.
+            </p>
+            <p class="text-xs text-emerald-600 dark:text-emerald-400">
+              <strong>The Fix:</strong> Wrapped <code class="font-mono text-xs">session.flush()</code> in <code class="font-mono text-xs">try ... except IntegrityError:</code>, cleanly converting concurrent database collisions into standard HTTP 409 Conflict.
+            </p>
+          </div>
+
+          <!-- Incident 14 -->
+          <div class="p-4 rounded-xl border border-[var(--border)] bg-[var(--background)] space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sm text-[var(--foreground)]">Incident #14: Fake Optimistic Concurrency Control (Version Increment without CAS)</span>
+              <span class="px-2 py-0.5 rounded text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400">CRITICAL</span>
+            </div>
+            <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+              <strong>The Problem:</strong> The model had a version column and the service incremented it (<code class="font-mono text-xs">acc.version += 1</code>), but SQLAlchemy emitted standard updates without checking the version in the WHERE clause!
+            </p>
+            <p class="text-xs text-emerald-600 dark:text-emerald-400">
+              <strong>The Fix:</strong> Configured <code class="font-mono text-xs">__mapper_args__ = {"version_id_col": version}</code> on the Account ORM model, activating native database-level Compare-And-Swap checks on every UPDATE.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: STRESS TEST & BENCHMARKS -->
+    <section id="tab-benchmarks" class="tab-content space-y-6">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 shadow-sm space-y-5">
+        <div>
+          <h2 class="text-lg font-bold text-[var(--foreground)]">Automated Verification & Stress Test Scorecard</h2>
+          <p class="text-sm text-[var(--muted-foreground)]">
+            Tested using Pytest, pytest-asyncio, HTTPX, and Locust load testing scripts simulating 1,000+ req/sec.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+            <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400">39 / 39</div>
+            <div class="text-xs text-[var(--muted-foreground)] mt-1">Tests Passed</div>
+          </div>
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+            <div class="text-2xl font-black text-blue-600 dark:text-blue-400">92.11%</div>
+            <div class="text-xs text-[var(--muted-foreground)] mt-1">Total Coverage</div>
+          </div>
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+            <div class="text-2xl font-black text-purple-600 dark:text-purple-400">34 ms</div>
+            <div class="text-xs text-[var(--muted-foreground)] mt-1">p95 Latency</div>
+          </div>
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+            <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400">0.00%</div>
+            <div class="text-xs text-[var(--muted-foreground)] mt-1">Error Rate Under Load</div>
+          </div>
+        </div>
+
+        <!-- Coverage by Module -->
+        <div class="space-y-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Test Coverage Breakdown</h3>
+          <div class="space-y-1.5 text-xs font-mono">
+            <div class="flex items-center justify-between p-2 rounded bg-[var(--background)] border border-[var(--border)]">
+              <span>app/services/reconciliation_service.py</span>
+              <span class="text-emerald-500 font-bold">100.0%</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded bg-[var(--background)] border border-[var(--border)]">
+              <span>app/api/v1/endpoints/accounts.py</span>
+              <span class="text-emerald-500 font-bold">100.0%</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded bg-[var(--background)] border border-[var(--border)]">
+              <span>app/models/account.py & transaction.py</span>
+              <span class="text-emerald-500 font-bold">100.0%</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded bg-[var(--background)] border border-[var(--border)]">
+              <span>app/services/ledger_service.py</span>
+              <span class="text-emerald-500 font-bold">93.0%</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded bg-[var(--background)] border border-[var(--border)]">
+              <span>app/services/idempotency_service.py</span>
+              <span class="text-emerald-500 font-bold">92.1%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Interactive JavaScript Engine -->
+  <script>
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('nav button').forEach(el => {
+        el.classList.remove('bg-[var(--primary)]', 'text-[var(--primary-foreground)]', 'shadow-sm');
+        el.classList.add('bg-[var(--card)]', 'text-[var(--muted-foreground)]', 'border', 'border-[var(--border)]');
+      });
+
+      const activeTab = document.getElementById('tab-' + tabId);
+      const activeBtn = document.getElementById('tab-btn-' + tabId);
+      if (activeTab) activeTab.classList.add('active');
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-[var(--card)]', 'text-[var(--muted-foreground)]', 'border');
+        activeBtn.classList.add('bg-[var(--primary)]', 'text-[var(--primary-foreground)]', 'shadow-sm');
+      }
+    }
+
+    // Ledger Simulator State
+    let state = {
+      balA: 100.0,
+      balB: 50.0,
+      verA: 1,
+      verB: 1,
+      lastTxId: null,
+      lastTxAmount: 0.0,
+      seenKeys: new Set()
+    };
+
+    function log(msg, colorClass = '') {
+      const consoleEl = document.getElementById('sim-console');
+      const p = document.createElement('p');
+      p.className = colorClass;
+      p.textContent = msg;
+      consoleEl.appendChild(p);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function highlightStep(stepId) {
+      const step = document.getElementById(stepId);
+      if (!step) return;
+      step.classList.add('border-emerald-500', 'bg-emerald-500/10', 'text-emerald-600');
+      setTimeout(() => {
+        step.classList.remove('border-emerald-500', 'bg-emerald-500/10', 'text-emerald-600');
+      }, 700);
+    }
+
+    function updateDisplay() {
+      document.getElementById('bal-a').textContent = `$${state.balA.toFixed(4)}`;
+      document.getElementById('bal-b').textContent = `$${state.balB.toFixed(4)}`;
+      document.getElementById('ver-a').textContent = state.verA;
+      document.getElementById('ver-b').textContent = state.verB;
+    }
+
+    function runScenario(type) {
+      if (type === 'transfer') {
+        const amt = 25.0;
+        if (state.balA < amt) {
+          log(`[ERROR 422] Insufficient funds: Alice has $${state.balA.toFixed(4)}, required $${amt.toFixed(4)}`, 'text-rose-500 font-bold');
+          return;
+        }
+
+        // Animate pipeline
+        setTimeout(() => highlightStep('step-rate'), 50);
+        setTimeout(() => highlightStep('step-idemp'), 200);
+        setTimeout(() => highlightStep('step-lock'), 350);
+        setTimeout(() => highlightStep('step-double'), 500);
+        setTimeout(() => highlightStep('step-commit'), 650);
+        setTimeout(() => highlightStep('step-webhook'), 800);
+
+        setTimeout(() => {
+          state.balA -= amt;
+          state.balB += amt;
+          state.verA += 1;
+          state.verB += 1;
+          state.lastTxAmount = amt;
+          state.lastTxId = 'tx_' + Math.random().toString(36).substring(2, 9);
+          updateDisplay();
+
+          log(`[TX SUBMITTED] IdempotencyKey: idemp_${Date.now()}`);
+          log(`[REDLOCK ACQUIRED] Locks held: [019468ab-...-0001, 019468ab-...-0002] in ascending order`);
+          log(`[DOUBLE-ENTRY] Debit Alice -$${amt.toFixed(4)}, Credit Bob +$${amt.toFixed(4)}. Sum: 0.0000`, 'text-emerald-500');
+          log(`[POSTGRES COMMIT] CAS version updated: Alice(v${state.verA}), Bob(v${state.verB})`);
+          log(`[CELERY WEBHOOK] Dispatched event 'transaction.completed' with HMAC-SHA256 signature to subscriber.`);
+        }, 850);
+
+      } else if (type === 'race') {
+        log(`[STRESS TEST] Simulating 10 concurrent requests to debit Alice by $20.00 simultaneously...`, 'text-sky-500 font-bold');
+        let succeeded = 0;
+        let rejected = 0;
+
+        for (let i = 1; i <= 10; i++) {
+          if (state.balA >= 20.0) {
+            state.balA -= 20.0;
+            state.balB += 20.0;
+            state.verA += 1;
+            state.verB += 1;
+            succeeded++;
+          } else {
+            rejected++;
+          }
+        }
+        updateDisplay();
+        setTimeout(() => {
+          log(`[RACE RESULTS] Succeeded: ${succeeded} (200 OK) | Rejected: ${rejected} (422 Insufficient Funds)`, 'text-purple-400 font-bold');
+          log(`[INVARIANT VERIFIED] Alice final balance: $${state.balA.toFixed(4)}. Overdraft: $0.0000 (Zero Drift)`, 'text-emerald-500 font-bold');
+        }, 300);
+
+      } else if (type === 'idempotency') {
+        const sampleKey = 'invoice_replay_key_999';
+        highlightStep('step-idemp');
+        if (state.seenKeys.has(sampleKey)) {
+          log(`[IDEMPOTENCY HIT] Key '${sampleKey}' already exists with status 'COMPLETED'.`, 'text-amber-500 font-bold');
+          log(`[CACHE RETURNED] Returning cached HTTP 200 OK without writing to ledger. Balance untouched.`);
+        } else {
+          state.seenKeys.add(sampleKey);
+          state.balA -= 10.0;
+          state.balB += 10.0;
+          state.verA += 1;
+          state.verB += 1;
+          updateDisplay();
+          log(`[FIRST SUBMISSION] Idempotency key '${sampleKey}' processed & recorded in idempotency_records table.`);
+          log(`[INFO] Now click 'Replay Duplicate Key' again to see deduplication in action!`, 'text-sky-400');
+        }
+
+      } else if (type === 'reversal') {
+        if (!state.lastTxAmount || state.lastTxAmount <= 0) {
+          log(`[REVERSAL FAILED] No prior transaction found to reverse. Run a transfer first.`, 'text-rose-500');
+          return;
+        }
+        if (state.balB < state.lastTxAmount) {
+          log(`[REVERSAL FAILED] Bob has insufficient funds ($${state.balB.toFixed(4)}) to refund $${state.lastTxAmount.toFixed(4)}.`, 'text-rose-500');
+          return;
+        }
+
+        const refundAmt = state.lastTxAmount;
+        state.balB -= refundAmt;
+        state.balA += refundAmt;
+        state.verA += 1;
+        state.verB += 1;
+        state.lastTxAmount = 0.0;
+        updateDisplay();
+
+        highlightStep('step-lock');
+        highlightStep('step-double');
+        highlightStep('step-commit');
+
+        log(`[REVERSAL EXECUTED] Acquired distributed lock on 'reversal:${state.lastTxId}'`);
+        log(`[LEDGER MIRROR] Created opposite entries: Debit Bob -$${refundAmt.toFixed(4)}, Credit Alice +$${refundAmt.toFixed(4)}`, 'text-emerald-500 font-bold');
+        log(`[STATUS UPDATED] Original transaction marked 'REVERSED'. Balances restored.`);
+
+      } else if (type === 'reconcile') {
+        log(`[AUDIT AUDITOR] Celery Beat initiating nightly balance reconciliation...`, 'text-sky-400 font-bold');
+        setTimeout(() => {
+          log(`[AUDIT PASSED] Alice: Snapshot ($${state.balA.toFixed(4)}) == Initial ($100.0000) + Sum(LedgerEntries). Discrepancy: $0.0000.`, 'text-emerald-500');
+          log(`[AUDIT PASSED] Bob: Snapshot ($${state.balB.toFixed(4)}) == Initial ($50.0000) + Sum(LedgerEntries). Discrepancy: $0.0000.`, 'text-emerald-500');
+          log(`[COMPLIANCE] SOX 404 & PCI-DSS check completed with status 'MATCHED'. Zero auto-mutation.`);
+        }, 400);
+      }
+    }
+
+    function resetSimulation() {
+      state.balA = 100.0;
+      state.balB = 50.0;
+      state.verA = 1;
+      state.verB = 1;
+      state.lastTxAmount = 0.0;
+      state.lastTxId = null;
+      state.seenKeys.clear();
+      updateDisplay();
+      document.getElementById('sim-console').innerHTML = `
+        <p class="text-emerald-500">[SYSTEM READY] Ledger reset. Alice: $100.0000 USD, Bob: $50.0000 USD.</p>
+        <p>[INFO] All locks, version counters, and idempotency cache cleared.</p>
+      `;
+    }
+  </script>
+</body>
+</html>

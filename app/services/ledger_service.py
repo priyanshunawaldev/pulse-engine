@@ -252,9 +252,9 @@ async def post_transaction(
     try:
         # Step 2: Acquire Distributed Locks in Ascending Order
         async with acquire_account_locks(redis, account_ids):
-            # Step 3: Fetch all involved accounts with row locking
+            # Step 3: Fetch all involved accounts with row locking in ascending UUID order (Vibe Block 07)
             dialect_name = session.bind.dialect.name if session.bind else ""
-            stmt = select(Account).where(Account.id.in_(account_ids))
+            stmt = select(Account).where(Account.id.in_(account_ids)).order_by(Account.id)
             if dialect_name == "postgresql":
                 stmt = stmt.with_for_update()
 

@@ -81,6 +81,7 @@ class LedgerEntry(Base):
 
     __table_args__ = (
         Index("ix_ledger_account_created", "account_id", "created_at"),
+        Index("ix_ledger_entries_account_id_id_desc", account_id, id.desc()),
         CheckConstraint(
             "(entry_type = 'DEBIT' AND amount < 0) OR (entry_type = 'CREDIT' AND amount > 0)",
             name="ck_ledger_entry_sign_matches_type",

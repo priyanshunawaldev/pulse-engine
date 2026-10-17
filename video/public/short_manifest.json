@@ -1,0 +1,56 @@
+{
+  "id": "short_master",
+  "title": "PulseEngine 60s Concurrency Demo",
+  "audio": "/audio/short_master.mp3",
+  "duration": 50.42,
+  "durationFrames": 1512,
+  "fps": 30,
+  "subtitles": [
+    {
+      "start": 0.1,
+      "end": 5.327,
+      "text": "What happens when ten concurrent requests try to drain an account with only one hundred dollars?"
+    },
+    {
+      "start": 5.277,
+      "end": 10.902,
+      "text": "Standard backends fail, causing negative balances and catastrophic overdraft losses."
+    },
+    {
+      "start": 10.902,
+      "end": 15.115,
+      "text": "Meet PulseEngine: an ultra-resilient distributed financial ledger."
+    },
+    {
+      "start": 15.115,
+      "end": 26.111,
+      "text": "With Redis Redlock distributed mutexes, SHA-256 database idempotency, and atomic double-entry bookkeeping, PulseEngine serializes adversarial races in real time."
+    },
+    {
+      "start": 26.111,
+      "end": 36.828,
+      "text": "Under ten simultaneous requests, exactly five succeed, five are rejected with 422 Insufficient Funds, and Alice's balance lands at exactly zero dollars."
+    },
+    {
+      "start": 36.828,
+      "end": 38.854,
+      "text": "Zero overdraft."
+    },
+    {
+      "start": 38.854,
+      "end": 40.59,
+      "text": "Zero drift."
+    },
+    {
+      "start": 40.59,
+      "end": 47.199,
+      "text": "Thirty-nine tests passing, ninety-two percent coverage, and sub-forty millisecond p95 latency."
+    },
+    {
+      "start": 47.199,
+      "end": 50.381,
+      "text": "PulseEngine is open source and production ready."
+    }
+  ],
+  "fullText": "What happens when ten concurrent requests try to drain an account with only one hundred dollars? Standard backends fail, causing negative balances and catastrophic overdraft losses. Meet PulseEngine: an ultra-resilient distributed financial ledger. With Redis Redlock distributed mutexes, SHA-256 database idempotency, and atomic double-entry bookkeeping, PulseEngine serializes adversarial races in real time. Under ten simultaneous requests, exactly five succeed, five are rejected with 422 Insufficient Funds, and Alice's balance lands at exactly zero dollars. Zero overdraft. Zero drift. Thirty-nine tests passing, ninety-two percent coverage, and sub-forty millisecond p95 latency. PulseEngine is open source and production ready."
+}

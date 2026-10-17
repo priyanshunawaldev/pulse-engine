@@ -67,4 +67,5 @@ class WebhookDelivery(Base):
 
     __table_args__ = (
         Index("ix_webhook_deliveries_status_retry", "status", "next_retry_at"),
+        Index("ix_webhook_deliveries_subscription_id_id_desc", subscription_id, id.desc()),
     )

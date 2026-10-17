@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.exc import StaleDataError
 
 from app.api.deps import AuthContext, get_current_auth, get_db, get_redis_dep
 from app.schemas.transaction import (
@@ -62,6 +63,8 @@ async def create_transaction(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
     except IdempotencyConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    except StaleDataError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="CONCURRENT_VERSION_CONFLICT")
     except LockAcquisitionError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
 
@@ -113,6 +116,8 @@ async def reverse_existing_transaction(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     except (TransactionAlreadyReversedError, AccountClosedError, IdempotencyConflictError) as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    except StaleDataError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="CONCURRENT_VERSION_CONFLICT")
     except (InsufficientFundsError, CurrencyMismatchError, DoubleEntryInvariantError, IdempotencyPayloadMismatchError) as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
     except LockAcquisitionError as exc:

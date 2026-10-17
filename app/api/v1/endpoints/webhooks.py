@@ -14,6 +14,7 @@ from app.schemas.webhook import (
     WebhookSubscriptionCreateSchema,
     WebhookSubscriptionListResponseSchema,
     WebhookSubscriptionResponseSchema,
+    mask_webhook_secret,
 )
 from app.services.ledger_service import decode_cursor, encode_cursor
 
@@ -84,7 +85,12 @@ async def list_webhook_subscriptions(
         next_cursor = encode_cursor(items[-1].id)
 
     return WebhookSubscriptionListResponseSchema(
-        items=[WebhookSubscriptionResponseSchema.model_validate(s) for s in items],
+        items=[
+            WebhookSubscriptionResponseSchema.model_validate(s).model_copy(
+                update={"secret": mask_webhook_secret(s.secret)}
+            )
+            for s in items
+        ],
         next_cursor=next_cursor,
         has_more=has_more,
     )

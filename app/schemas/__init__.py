@@ -26,6 +26,7 @@ from app.schemas.webhook import (
     WebhookSubscriptionCreateSchema,
     WebhookSubscriptionListResponseSchema,
     WebhookSubscriptionResponseSchema,
+    mask_webhook_secret,
 )
 
 __all__ = [
@@ -41,6 +42,7 @@ __all__ = [
     "WebhookSubscriptionCreateSchema",
     "WebhookSubscriptionResponseSchema",
     "WebhookSubscriptionListResponseSchema",
+    "mask_webhook_secret",
     "WebhookDeliveryResponseSchema",
     "WebhookDeliveryListResponseSchema",
     "TokenRequestSchema",

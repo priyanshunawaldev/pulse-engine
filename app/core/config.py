@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "dev_secret_key_change_in_production_0123456789abcdef"
     API_KEY_HEADER: str = "X-API-Key"
 
+    # CORS
+    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
+
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/pulseengine"
     DB_POOL_SIZE: int = 20

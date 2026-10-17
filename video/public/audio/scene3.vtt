@@ -1,0 +1,20 @@
+1
+00:00:00,100 --> 00:00:05,015
+Let's see PulseEngine under adversarial pressure in our live interactive simulator.
+
+2
+00:00:04,965 --> 00:00:15,601
+After an initial transfer commits atomically, we trigger the ultimate concurrency stress test: ten simultaneous twenty-dollar debit requests racing against Alice's one hundred dollar balance.
+
+3
+00:00:15,601 --> 00:00:27,152
+PulseEngine strictly serializes access: exactly five requests succeed, five are rejected with HTTP 422, and Alice's balance settles at exactly zero dollars.
+
+4
+00:00:27,152 --> 00:00:30,428
+Zero overdraft, zero race drift.
+
+5
+00:00:30,428 --> 00:00:36,550
+When a network duplicate replays, Redis instantly returns the cached response without mutating the ledger.
+

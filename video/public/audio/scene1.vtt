@@ -1,0 +1,20 @@
+1
+00:00:00,100 --> 00:00:07,387
+In high-scale financial technology, naive relational databases and standard web backends collapse under real concurrency.
+
+2
+00:00:07,337 --> 00:00:13,865
+Picture a flash sale: an account holding just one hundred dollars receives ten simultaneous debit requests.
+
+3
+00:00:13,865 --> 00:00:24,606
+In standard systems, every worker thread reads the same snapshot balance before committing, causing catastrophic overdrafts, negative ledger balances, and silent micro-cent drift.
+
+4
+00:00:24,606 --> 00:00:31,087
+A single race condition like this once cost an e-commerce platform over one hundred and fifty thousand dollars in minutes.
+
+5
+00:00:31,087 --> 00:00:33,784
+This is why PulseEngine was created.
+

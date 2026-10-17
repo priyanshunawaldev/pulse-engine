@@ -1,0 +1,16 @@
+1
+00:00:00,100 --> 00:00:04,633
+PulseEngine was hardened through fourteen documented production postmortems.
+
+2
+00:00:04,583 --> 00:00:14,780
+In Incident number seven, bidirectional transfers caused circular deadlocks; we resolved this by sorting account UUIDs lexicographically before acquiring Redlock mutexes.
+
+3
+00:00:14,780 --> 00:00:26,400
+In Incident number fourteen, we eliminated fake optimistic concurrency by binding native version ID columns in SQLAlchemy, guaranteeing the database executes an atomic CAS WHERE version check.
+
+4
+00:00:26,400 --> 00:00:34,039
+And in distributed locking, atomic Lua scripts verify ownership before releasing Redis locks, preventing split-brain corruption.
+

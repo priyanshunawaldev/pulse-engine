@@ -54,7 +54,23 @@ async def check_or_create_idempotency(
     record = result.scalar_one_or_none()
 
     if record is not None:
-        # Check payload integrity
+        # Expiration Check (Vibe Block 17): If expired, allow transaction to proceed fresh with new payload
+        rec_expires_at = (
+            record.expires_at
+            if record.expires_at.tzinfo is not None
+            else record.expires_at.replace(tzinfo=UTC)
+        )
+        if rec_expires_at <= now:
+            logger.info("idempotency_key_expired_resetting", idempotency_key=idempotency_key)
+            record.status = "PROCESSING"
+            record.request_hash = request_hash
+            record.expires_at = now + timedelta(hours=ttl_hours)
+            record.response_status_code = None
+            record.response_body = None
+            await session.flush()
+            return record, False
+
+        # Check payload integrity on active (non-expired) records
         if record.request_hash != request_hash:
             logger.warning(
                 "idempotency_payload_mismatch",

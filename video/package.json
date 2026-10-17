@@ -1,0 +1,24 @@
+{
+  "name": "pulseengine-video",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "remotion bundle",
+    "render": "remotion render PulseEngineMaster16x9 out/pulseengine_master_16x9.mp4",
+    "render:short": "remotion render PulseEngineShort9x16 out/pulseengine_short_9x16.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.230",
+    "@remotion/bundler": "^4.0.230",
+    "@remotion/renderer": "^4.0.230",
+    "remotion": "^4.0.230",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "lucide-react": "^0.460.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}

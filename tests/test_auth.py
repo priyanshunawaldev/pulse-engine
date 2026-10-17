@@ -1,3 +1,5 @@
+import time
+
 import httpx
 import pytest
 
@@ -115,8 +117,9 @@ async def test_api_rate_limit_exceeded_429(client: httpx.AsyncClient, test_redis
 
     keys = await test_redis.keys("ratelimit:*")
     assert len(keys) >= 1
+    now_ts = str(time.time())
     for k in keys:
-        await test_redis.hset(k, "tokens", "0")
+        await test_redis.hset(k, mapping={"tokens": "0", "last_refreshed": now_ts})
 
     r2 = await client.get("/v1/accounts", headers=headers)
     assert r2.status_code == 429

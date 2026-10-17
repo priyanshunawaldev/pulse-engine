@@ -34,3 +34,8 @@ htmlcov/
 # Local databases
 *.db
 *.sqlite3
+
+video/node_modules/
+video/out/
+node_modules/
+

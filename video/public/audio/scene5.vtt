@@ -1,0 +1,12 @@
+1
+00:00:00,100 --> 00:00:04,390
+Deploying PulseEngine takes a single command: Docker Compose up.
+
+2
+00:00:04,340 --> 00:00:19,965
+The engine orchestrates five production containers: The FastAPI gateway, PostgreSQL 16 with composite indexes and fixed-point NUMERIC arithmetic, Redis 7 for distributed locks, and Celery workers with Celery Beat running scheduled nightly reconciliation audits.
+
+3
+00:00:19,965 --> 00:00:26,122
+Comprehensive health check probes ensure all cluster dependencies are warm before accepting live traffic.
+
