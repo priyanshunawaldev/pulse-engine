@@ -1,0 +1,123 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pulseengine-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: pulseengine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pulseengine"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pulseengine-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: pulseengine-redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pulseengine-net
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pulseengine-api
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_NAME: PulseEngine
+      APP_ENV: production
+      DEBUG: "false"
+      SECRET_KEY: production_secret_key_pulseengine_distributed_ledger_2026
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@postgres:5432/pulseengine
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      RATE_LIMIT_REQUESTS: 1000
+      RATE_LIMIT_WINDOW_SECONDS: 60
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4"
+    networks:
+      - pulseengine-net
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pulseengine-celery-worker
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_NAME: PulseEngine
+      APP_ENV: production
+      SECRET_KEY: production_secret_key_pulseengine_distributed_ledger_2026
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@postgres:5432/pulseengine
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4
+    networks:
+      - pulseengine-net
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pulseengine-celery-beat
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_NAME: PulseEngine
+      APP_ENV: production
+      SECRET_KEY: production_secret_key_pulseengine_distributed_ledger_2026
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@postgres:5432/pulseengine
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    command: celery -A app.workers.celery_app beat --loglevel=info
+    networks:
+      - pulseengine-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  pulseengine-net:
+    driver: bridge

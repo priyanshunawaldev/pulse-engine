@@ -1,0 +1,9 @@
+-r requirements.txt
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+pytest-cov>=5.0.0
+fakeredis>=2.24.0
+lupa>=2.4
+aiosqlite>=0.20.0
+ruff>=0.6.0
+locust>=2.31.0
