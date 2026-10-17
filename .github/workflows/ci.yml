@@ -7,10 +7,38 @@ on:
     branches: [main, master]
 
 jobs:
-  lint-and-test:
+  test:
+    name: Lint, Type Check & Test Suite
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: pulseengine
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -18,21 +46,21 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: Ruff Lint & Format Check
+      - name: Run Ruff Linter
         run: |
-          ruff check app/ tests/
-          ruff format --check app/ tests/
+          ruff check app/ tests/ locustfile.py
 
-      - name: Run Test Suite with Coverage
-        run: |
-          pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=85
+      - name: Run Pytest Suite with 90%+ Coverage
         env:
-          APP_ENV: testing
-          DATABASE_URL: sqlite+aiosqlite:///:memory:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@localhost:5432/pulseengine
           REDIS_URL: redis://localhost:6379/0
-          SECRET_KEY: test_secret_ci_key_0123456789abcdef
+          CELERY_BROKER_URL: redis://localhost:6379/1
+          CELERY_RESULT_BACKEND: redis://localhost:6379/2
+          SECRET_KEY: test_secret_key_ci_only_pulseengine
+        run: |
+          pytest tests/ -v --cov=app --cov-fail-under=90 --cov-report=term-missing

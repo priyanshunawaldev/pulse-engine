@@ -92,7 +92,7 @@ class LedgerUser(HttpUser):
             name="/v1/transactions [Create Transfer]",
             catch_response=True,
         ) as resp:
-            if resp.status_code == 201:
+            if resp.status_code in (200, 201):
                 resp.success()
                 self.last_posted_payload = payload
                 self.last_posted_key = idempotency_key

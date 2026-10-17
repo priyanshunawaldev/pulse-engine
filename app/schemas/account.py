@@ -25,6 +25,7 @@ class AccountResponseSchema(BaseModel):
     account_number: str
     owner_name: str
     currency: str
+    initial_balance: Decimal
     balance: Decimal
     status: AccountStatus
     version: int

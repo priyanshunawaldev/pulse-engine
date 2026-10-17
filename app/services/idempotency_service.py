@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
@@ -89,8 +90,14 @@ async def check_or_create_idempotency(
         expires_at=now + timedelta(hours=ttl_hours),
     )
     session.add(new_record)
-    await session.flush()
-    return new_record, False
+    try:
+        await session.flush()
+        return new_record, False
+    except IntegrityError:
+        await session.rollback()
+        raise IdempotencyConflictError(
+            f"A request with idempotency key '{idempotency_key}' is currently being processed."
+        )
 
 
 async def complete_idempotency(

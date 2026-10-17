@@ -145,3 +145,52 @@ async def test_concurrent_in_flight_processing_conflict(client: httpx.AsyncClien
     resp = await client.post("/v1/transactions", json=payload, headers=auth_headers)
     assert resp.status_code == 409
     assert "currently being processed" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_concurrent_idempotency_race_condition(client: httpx.AsyncClient, auth_headers: dict[str, str]):
+    """
+    CRITICAL RACE CONDITION TEST:
+    Fire two concurrent requests simultaneously with the EXACT same new idempotency key.
+    One must succeed with 200 OK.
+    The concurrent request must NOT crash with 500 DB IntegrityError;
+    it must return 409 Conflict (in-flight processing) or 200 (cached response).
+    Account must only be debited ONCE.
+    """
+    import asyncio
+
+    acc_a = (await client.post(
+        "/v1/accounts",
+        json={"owner_name": "Racer A", "currency": "USD", "initial_balance": "500.0000"},
+        headers=auth_headers,
+    )).json()
+    acc_b = (await client.post(
+        "/v1/accounts",
+        json={"owner_name": "Racer B", "currency": "USD", "initial_balance": "0.0000"},
+        headers=auth_headers,
+    )).json()
+
+    key = "tx_concurrent_idempotency_race_key"
+    payload = {
+        "idempotency_key": key,
+        "entries": [
+            {"account_id": acc_a["id"], "amount": "-30.0000", "entry_type": "DEBIT"},
+            {"account_id": acc_b["id"], "amount": "30.0000", "entry_type": "CREDIT"},
+        ],
+    }
+
+    # Fire both concurrently
+    resp1, resp2 = await asyncio.gather(
+        client.post("/v1/transactions", json=payload, headers=auth_headers),
+        client.post("/v1/transactions", json=payload, headers=auth_headers),
+    )
+
+    codes = [resp1.status_code, resp2.status_code]
+    # At least one must be 200 OK
+    assert 200 in codes
+    # The other must be either 200 (cached hit) or 409 (conflict) - NEVER 500!
+    assert all(c in (200, 409) for c in codes)
+
+    # Balance check: only 30 deducted, not 60
+    bal_a = Decimal((await client.get(f"/v1/accounts/{acc_a['id']}", headers=auth_headers)).json()["balance"])
+    assert bal_a == Decimal("470.0000")

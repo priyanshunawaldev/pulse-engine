@@ -25,6 +25,7 @@ def upgrade() -> None:
         sa.Column("account_number", sa.String(length=32), nullable=False),
         sa.Column("owner_name", sa.String(length=128), nullable=False),
         sa.Column("currency", sa.String(length=3), nullable=False),
+        sa.Column("initial_balance", sa.Numeric(precision=18, scale=4), nullable=False, server_default="0.0000"),
         sa.Column("balance", sa.Numeric(precision=18, scale=4), nullable=False, server_default="0.0000"),
         sa.Column("version", sa.Integer(), nullable=False, server_default="1"),
         sa.Column("status", sa.String(length=20), nullable=False, server_default="ACTIVE"),

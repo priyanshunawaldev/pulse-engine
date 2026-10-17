@@ -123,7 +123,12 @@ async def acquire_account_locks(
                 key=f"account:{acc_id_str}",
                 ttl_ms=ttl_ms,
             )
-            await lock.acquire()
+            acquired = await lock.acquire()
+            if not acquired:
+                logger.error("account_lock_timeout", account_id=acc_id_str)
+                raise LockAcquisitionError(
+                    f"Could not acquire distributed lock for account '{acc_id_str}' within timeout."
+                )
             locks.append(lock)
         yield locks
     finally:

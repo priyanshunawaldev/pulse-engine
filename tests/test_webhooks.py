@@ -140,3 +140,51 @@ async def test_webhook_delivery_dlq_on_repeated_failure(test_db, client: httpx.A
     assert dlq_record["status"] == "DLQ"
     assert dlq_record["attempt_count"] == 3
     assert "Connection refused" in dlq_record["error_detail"]
+
+
+@pytest.mark.asyncio
+async def test_webhook_endpoints_404_and_cursor_pagination(client: httpx.AsyncClient, auth_headers: dict[str, str]):
+    import uuid
+
+    # 1. 404 when subscribing for non-existent account
+    bad_resp = await client.post(
+        "/v1/webhooks",
+        json={
+            "account_id": str(uuid.uuid4()),
+            "target_url": "https://example.com/webhook",
+            "event_types": ["transaction.completed"],
+        },
+        headers=auth_headers,
+    )
+    assert bad_resp.status_code == 404
+
+    # 2. 404 when deactivating non-existent subscription
+    bad_del = await client.delete(f"/v1/webhooks/{uuid.uuid4()}", headers=auth_headers)
+    assert bad_del.status_code == 404
+
+    # 3. Create an account and 2 subscriptions to test pagination
+    acc = (await client.post(
+        "/v1/accounts",
+        json={"owner_name": "Webhook Paginator", "currency": "USD", "initial_balance": "100.0000"},
+        headers=auth_headers,
+    )).json()
+
+    await client.post(
+        "/v1/webhooks",
+        json={"account_id": acc["id"], "target_url": "https://example.com/w1", "event_types": ["*"]},
+        headers=auth_headers,
+    )
+    await client.post(
+        "/v1/webhooks",
+        json={"account_id": acc["id"], "target_url": "https://example.com/w2", "event_types": ["*"]},
+        headers=auth_headers,
+    )
+
+    p1 = (await client.get(f"/v1/webhooks?account_id={acc['id']}&limit=1", headers=auth_headers)).json()
+    assert len(p1["items"]) == 1
+    assert p1["has_more"] is True
+    cursor = p1["next_cursor"]
+
+    p2 = (await client.get(f"/v1/webhooks?account_id={acc['id']}&limit=1&cursor={cursor}", headers=auth_headers)).json()
+    assert len(p2["items"]) == 1
+    assert p2["has_more"] is False

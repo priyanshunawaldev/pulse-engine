@@ -22,6 +22,11 @@ class Account(Base):
     account_number: Mapped[str] = mapped_column(String(32), unique=True, index=True, nullable=False)
     owner_name: Mapped[str] = mapped_column(String(128), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)  # ISO 4217, e.g. "USD", "INR"
+    initial_balance: Mapped[Decimal] = mapped_column(
+        Numeric(18, 4),
+        default=Decimal("0.0000"),
+        nullable=False,
+    )
     balance: Mapped[Decimal] = mapped_column(
         Numeric(18, 4),
         default=Decimal("0.0000"),
@@ -52,3 +57,4 @@ class Account(Base):
         CheckConstraint("balance >= 0", name="ck_account_non_negative_balance"),
         Index("ix_accounts_currency_status", "currency", "status"),
     )
+    __mapper_args__ = {"version_id_col": version}

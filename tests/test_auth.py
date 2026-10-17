@@ -95,3 +95,29 @@ async def test_create_api_key_and_client_endpoints(client: httpx.AsyncClient):
     )
     assert token_resp.status_code == 200
     assert "access_token" in token_resp.json()
+
+
+@pytest.mark.asyncio
+async def test_invalid_jwt_bearer_token(client: httpx.AsyncClient):
+    resp = await client.get("/v1/accounts", headers={"Authorization": "Bearer invalid.token.payload"})
+    assert resp.status_code == 401
+    assert "Invalid or expired authentication credentials" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_api_rate_limit_exceeded_429(client: httpx.AsyncClient, test_redis):
+    key_resp = await client.post("/v1/auth/api-keys", json={"name": "Rate Limited Key"})
+    api_key = key_resp.json()["api_key"]
+    headers = {"X-API-Key": api_key}
+
+    r1 = await client.get("/v1/accounts", headers=headers)
+    assert r1.status_code == 200
+
+    keys = await test_redis.keys("ratelimit:*")
+    assert len(keys) >= 1
+    for k in keys:
+        await test_redis.hset(k, "tokens", "0")
+
+    r2 = await client.get("/v1/accounts", headers=headers)
+    assert r2.status_code == 429
+    assert "Rate limit exceeded" in r2.json()["detail"]

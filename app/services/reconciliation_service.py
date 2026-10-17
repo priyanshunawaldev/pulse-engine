@@ -36,7 +36,7 @@ async def run_reconciliation(session: AsyncSession) -> list[ReconciliationAudit]
             LedgerEntry.account_id == acc.id
         )
         sum_result = await session.execute(sum_stmt)
-        calculated_balance = Decimal(str(sum_result.scalar_one()))
+        calculated_balance = Decimal(str(acc.initial_balance)) + Decimal(str(sum_result.scalar_one()))
         snapshot_balance = Decimal(str(acc.balance))
 
         discrepancy = snapshot_balance - calculated_balance

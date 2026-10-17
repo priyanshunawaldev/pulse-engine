@@ -376,3 +376,135 @@ async def test_list_accounts_and_transactions_endpoints(client: httpx.AsyncClien
     tx_detail = await client.get(f"/v1/transactions/{tx_id}", headers=auth_headers)
     assert tx_detail.status_code == 200
     assert tx_detail.json()["id"] == tx_id
+
+
+@pytest.mark.asyncio
+async def test_concurrent_reversals_prevented(client: httpx.AsyncClient, auth_headers: dict[str, str]):
+    """
+    CRITICAL RACE CONDITION TEST:
+    Post a transaction. Fire 2 concurrent reversal requests simultaneously.
+    With DistributedLock on the transaction ID:
+    - EXACTLY ONE reversal must succeed (200 OK).
+    - The concurrent reversal must be rejected (409 Conflict).
+    - The account balances must be restored to their original amounts (NOT double-refunded).
+    """
+    import asyncio
+
+    acc_a = (await client.post(
+        "/v1/accounts",
+        json={"owner_name": "Orig Sender", "currency": "USD", "initial_balance": "300.0000"},
+        headers=auth_headers,
+    )).json()
+    acc_b = (await client.post(
+        "/v1/accounts",
+        json={"owner_name": "Orig Receiver", "currency": "USD", "initial_balance": "100.0000"},
+        headers=auth_headers,
+    )).json()
+
+    # Post initial transfer: $50
+    tx_resp = await client.post(
+        "/v1/transactions",
+        json={
+            "idempotency_key": "tx_race_rev_init",
+            "entries": [
+                {"account_id": acc_a["id"], "amount": "-50.0000", "entry_type": "DEBIT"},
+                {"account_id": acc_b["id"], "amount": "50.0000", "entry_type": "CREDIT"},
+            ],
+        },
+        headers=auth_headers,
+    )
+    tx_id = tx_resp.json()["id"]
+
+    # Fire 2 concurrent reversals with different idempotency keys
+    resp1, resp2 = await asyncio.gather(
+        client.post(f"/v1/transactions/{tx_id}/reverse", headers={**auth_headers, "Idempotency-Key": "rev_race_1"}),
+        client.post(f"/v1/transactions/{tx_id}/reverse", headers={**auth_headers, "Idempotency-Key": "rev_race_2"}),
+    )
+
+    statuses = [resp1.status_code, resp2.status_code]
+    assert 200 in statuses
+    assert 409 in statuses
+
+    # Balances must be exactly $300 and $100 (never double-reversed to $350 and $50)
+    bal_a = Decimal((await client.get(f"/v1/accounts/{acc_a['id']}", headers=auth_headers)).json()["balance"])
+    bal_b = Decimal((await client.get(f"/v1/accounts/{acc_b['id']}", headers=auth_headers)).json()["balance"])
+    assert bal_a == Decimal("300.0000")
+    assert bal_b == Decimal("100.0000")
+
+
+@pytest.mark.asyncio
+async def test_reject_single_account_self_transfer(client: httpx.AsyncClient, auth_headers: dict[str, str]):
+    acc = (await client.post(
+        "/v1/accounts",
+        json={"owner_name": "Self", "currency": "USD", "initial_balance": "100.0000"},
+        headers=auth_headers,
+    )).json()
+
+    resp = await client.post(
+        "/v1/transactions",
+        json={
+            "idempotency_key": "tx_self_transfer",
+            "entries": [
+                {"account_id": acc["id"], "amount": "-10.0000", "entry_type": "DEBIT"},
+                {"account_id": acc["id"], "amount": "10.0000", "entry_type": "CREDIT"},
+            ],
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422
+    assert "at least two distinct accounts" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_reject_intermediate_negative_running_balance(client: httpx.AsyncClient, auth_headers: dict[str, str]):
+    acc_a = (await client.post(
+        "/v1/accounts",
+        json={"owner_name": "Acc A", "currency": "USD", "initial_balance": "20.0000"},
+        headers=auth_headers,
+    )).json()
+    acc_b = (await client.post(
+        "/v1/accounts",
+        json={"owner_name": "Acc B", "currency": "USD", "initial_balance": "100.0000"},
+        headers=auth_headers,
+    )).json()
+
+    # Acc A has $20. Entry 1 debits $50 (would dip to -$30), Entry 4 credits $50.
+    # Total delta for A is 0, but intermediate running balance dips negative.
+    resp = await client.post(
+        "/v1/transactions",
+        json={
+            "idempotency_key": "tx_intermediate_dip",
+            "entries": [
+                {"account_id": acc_a["id"], "amount": "-50.0000", "entry_type": "DEBIT"},
+                {"account_id": acc_b["id"], "amount": "50.0000", "entry_type": "CREDIT"},
+                {"account_id": acc_b["id"], "amount": "-50.0000", "entry_type": "DEBIT"},
+                {"account_id": acc_a["id"], "amount": "50.0000", "entry_type": "CREDIT"},
+            ],
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422
+    assert "cannot dip below zero" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_account_and_transaction_404_handlers(client: httpx.AsyncClient, auth_headers: dict[str, str]):
+    import uuid
+    random_uuid = uuid.uuid4()
+
+    # Account 404s
+    resp1 = await client.get(f"/v1/accounts/{random_uuid}", headers=auth_headers)
+    assert resp1.status_code == 404
+
+    resp2 = await client.patch(f"/v1/accounts/{random_uuid}/close", headers=auth_headers)
+    assert resp2.status_code == 404
+
+    resp3 = await client.get(f"/v1/accounts/{random_uuid}/ledger", headers=auth_headers)
+    assert resp3.status_code == 404
+
+    # Transaction 404s
+    resp4 = await client.get(f"/v1/transactions/{random_uuid}", headers=auth_headers)
+    assert resp4.status_code == 404
+
+    resp5 = await client.post(f"/v1/transactions/{random_uuid}/reverse", headers=auth_headers)
+    assert resp5.status_code == 404

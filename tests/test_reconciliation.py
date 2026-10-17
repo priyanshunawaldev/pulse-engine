@@ -44,16 +44,20 @@ async def test_reconciliation_matched_audit(client: httpx.AsyncClient, auth_head
         headers=auth_headers,
     )
 
-    # Note: acc_source started with 500 initial balance, so ledger entries sum is -100.
-    # To have exact match, accounts without initial journal entry had 500 without ledger entry.
-    # For acc_a, initial was 0.0000, credit was 100.0000, balance is 100.0000 -> EXACT MATCH.
+    # With initial_balance tracking, both acc_a and acc_source reconcile to exact MATCHED status!
     audits = await run_reconciliation(test_db)
     acc_a_audit = next(a for a in audits if str(a.account_id) == acc_a["id"])
+    acc_source_audit = next(a for a in audits if str(a.account_id) == acc_source["id"])
 
     assert acc_a_audit.status == "MATCHED"
     assert acc_a_audit.discrepancy == Decimal("0.0000")
     assert acc_a_audit.snapshot_balance == Decimal("100.0000")
     assert acc_a_audit.calculated_balance == Decimal("100.0000")
+
+    assert acc_source_audit.status == "MATCHED"
+    assert acc_source_audit.discrepancy == Decimal("0.0000")
+    assert acc_source_audit.snapshot_balance == Decimal("400.0000")
+    assert acc_source_audit.calculated_balance == Decimal("400.0000")
 
 
 @pytest.mark.asyncio

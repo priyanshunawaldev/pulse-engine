@@ -31,7 +31,7 @@ from app.services.idempotency_service import (
     compute_request_hash,
     mark_idempotency_failed,
 )
-from app.services.lock_service import acquire_account_locks
+from app.services.lock_service import DistributedLock, acquire_account_locks
 
 
 class LedgerError(Exception):
@@ -104,6 +104,7 @@ async def create_account(
         account_number=acc_num,
         owner_name=payload.owner_name,
         currency=payload.currency.upper(),
+        initial_balance=payload.initial_balance,
         balance=payload.initial_balance,
         status=AccountStatus.ACTIVE,
     )
@@ -243,6 +244,10 @@ async def post_transaction(
         return TransactionResponseSchema.model_validate(record.response_body), True
 
     account_ids = [entry.account_id for entry in payload.entries]
+    if len(set(account_ids)) < 2:
+        raise DoubleEntryInvariantError(
+            "Transaction must involve at least two distinct accounts to preserve double-entry integrity."
+        )
 
     try:
         # Step 2: Acquire Distributed Locks in Ascending Order
@@ -312,6 +317,10 @@ async def post_transaction(
             for entry_data in payload.entries:
                 current_bal = running_balances[entry_data.account_id]
                 new_bal = current_bal + entry_data.amount
+                if new_bal < Decimal("0.0000"):
+                    raise InsufficientFundsError(
+                        f"Account '{accounts_by_id[entry_data.account_id].account_number}' balance cannot dip below zero during transaction execution."
+                    )
                 running_balances[entry_data.account_id] = new_bal
 
                 entry = LedgerEntry(
@@ -327,11 +336,10 @@ async def post_transaction(
             # Flush to database so entry.id and entry.created_at are generated
             await session.flush()
 
-            # Update Account snapshot balances and increment version
+            # Update Account snapshot balances (version is automatically managed via version_id_col for OCC)
             for a_id, final_bal in running_balances.items():
                 acc = accounts_by_id[a_id]
                 acc.balance = final_bal
-                acc.version += 1
 
             # Prepare response object
             response_schema = TransactionResponseSchema(
@@ -460,57 +468,67 @@ async def reverse_transaction(
 ) -> TransactionResponseSchema:
     """
     Reverse a completed transaction by generating an exact equal and opposite mirror transaction.
-    Debits are converted to Credits, and Credits are converted to Debits.
+    Guarded by a distributed lock on the transaction ID to eliminate concurrent double-reversals.
     """
-    stmt = (
-        select(Transaction)
-        .options(selectinload(Transaction.entries))
-        .where(Transaction.id == transaction_id)
-    )
-    result = await session.execute(stmt)
-    original_tx = result.scalar_one_or_none()
-
-    if not original_tx:
-        raise TransactionNotFoundError(f"Transaction '{transaction_id}' was not found.")
-
-    if original_tx.status == TransactionStatus.REVERSED:
-        raise TransactionAlreadyReversedError(f"Transaction '{transaction_id}' has already been reversed.")
-
-    if original_tx.status != TransactionStatus.COMPLETED:
-        raise TransactionAlreadyReversedError(
-            f"Cannot reverse transaction '{transaction_id}' with status {original_tx.status.value}."
+    async with DistributedLock(redis, f"reversal:{transaction_id}"):
+        stmt = (
+            select(Transaction)
+            .options(selectinload(Transaction.entries))
+            .where(Transaction.id == transaction_id)
         )
+        result = await session.execute(stmt)
+        original_tx = result.scalar_one_or_none()
 
-    # Invert all entries to construct mirror transaction
-    reversal_entries: list[EntryCreateSchema] = []
-    for entry in original_tx.entries:
-        inverted_amount = -entry.amount
-        inverted_type = "CREDIT" if inverted_amount > Decimal("0") else "DEBIT"
-        reversal_entries.append(
-            EntryCreateSchema(
-                account_id=entry.account_id,
-                amount=inverted_amount,
-                entry_type=inverted_type,
+        if not original_tx:
+            raise TransactionNotFoundError(f"Transaction '{transaction_id}' was not found.")
+
+        if original_tx.status == TransactionStatus.REVERSED:
+            raise TransactionAlreadyReversedError(f"Transaction '{transaction_id}' has already been reversed.")
+
+        if original_tx.status != TransactionStatus.COMPLETED:
+            raise TransactionAlreadyReversedError(
+                f"Cannot reverse transaction '{transaction_id}' with status {original_tx.status.value}."
             )
+
+        # Invert all entries to construct mirror transaction
+        reversal_entries: list[EntryCreateSchema] = []
+        for entry in original_tx.entries:
+            inverted_amount = -entry.amount
+            inverted_type = "CREDIT" if inverted_amount > Decimal("0") else "DEBIT"
+            reversal_entries.append(
+                EntryCreateSchema(
+                    account_id=entry.account_id,
+                    amount=inverted_amount,
+                    entry_type=inverted_type,
+                )
+            )
+
+        rev_key = idempotency_key or f"rev_{original_tx.id}_{secrets.token_hex(4)}"
+        reversal_payload = TransactionCreateSchema(
+            idempotency_key=rev_key,
+            description=f"Reversal of Transaction {original_tx.id}",
+            entries=reversal_entries,
+            metadata={"original_transaction_id": str(original_tx.id)},
         )
 
-    rev_key = idempotency_key or f"rev_{original_tx.id}_{secrets.token_hex(4)}"
-    reversal_payload = TransactionCreateSchema(
-        idempotency_key=rev_key,
-        description=f"Reversal of Transaction {original_tx.id}",
-        entries=reversal_entries,
-        metadata={"original_transaction_id": str(original_tx.id)},
-    )
+        reversal_resp, _ = await post_transaction(
+            session=session,
+            redis=redis,
+            payload=reversal_payload,
+        )
 
-    reversal_resp, _ = await post_transaction(
-        session=session,
-        redis=redis,
-        payload=reversal_payload,
-    )
+        # Re-fetch and mark original transaction as REVERSED
+        stmt = select(Transaction).where(Transaction.id == transaction_id)
+        result = await session.execute(stmt)
+        tx_to_update = result.scalar_one_or_none()
+        if tx_to_update:
+            tx_to_update.status = TransactionStatus.REVERSED
+            await session.commit()
 
-    # Mark original transaction as REVERSED
-    original_tx.status = TransactionStatus.REVERSED
-    await session.commit()
-    logger.info("transaction_reversed", original_transaction_id=str(original_tx.id), reversal_id=str(reversal_resp.id))
+        logger.info(
+            "transaction_reversed",
+            original_transaction_id=str(transaction_id),
+            reversal_id=str(reversal_resp.id),
+        )
 
-    return reversal_resp
+        return reversal_resp

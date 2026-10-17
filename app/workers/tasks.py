@@ -174,13 +174,21 @@ def trigger_webhooks_for_transaction(
     account_ids: list[str],
     event_type: str = "transaction.completed",
 ) -> None:
-    """Post-commit trigger to schedule webhook deliveries via Celery."""
+    """Post-commit trigger to schedule webhook deliveries via Celery (safe on or off event loop)."""
     try:
-        delivery_ids = asyncio.run(
-            _trigger_webhooks_for_transaction_async(transaction_id, account_ids, event_type)
-        )
-        for d_id in delivery_ids:
-            dispatch_webhook.delay(d_id)
+        try:
+            loop = asyncio.get_running_loop()
+            async def _bg_task():
+                d_ids = await _trigger_webhooks_for_transaction_async(transaction_id, account_ids, event_type)
+                for d_id in d_ids:
+                    dispatch_webhook.delay(d_id)
+            loop.create_task(_bg_task())
+        except RuntimeError:
+            delivery_ids = asyncio.run(
+                _trigger_webhooks_for_transaction_async(transaction_id, account_ids, event_type)
+            )
+            for d_id in delivery_ids:
+                dispatch_webhook.delay(d_id)
     except Exception as exc:
         logger.warning("trigger_webhooks_failed", error=str(exc))
 

@@ -111,7 +111,9 @@ async def reverse_existing_transaction(
         )
     except TransactionNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-    except TransactionAlreadyReversedError as exc:
+    except (TransactionAlreadyReversedError, AccountClosedError, IdempotencyConflictError) as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-    except InsufficientFundsError as exc:
+    except (InsufficientFundsError, CurrencyMismatchError, DoubleEntryInvariantError, IdempotencyPayloadMismatchError) as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
+    except LockAcquisitionError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
